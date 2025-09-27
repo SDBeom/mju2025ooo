@@ -1,11 +1,17 @@
-import React, { Suspense } from 'react'
+import React, { Suspense, useState, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment, useGLTF } from '@react-three/drei'
 
 // GLTF 모델 로더 컴포넌트
-function Model({ url }) {
-  const { scene } = useGLTF(url)
-  return <primitive object={scene} scale={1} position={[0, 0, 0]} />
+function Model({ url, onError }) {
+  try {
+    const { scene } = useGLTF(url)
+    return <primitive object={scene} scale={1} position={[0, 0, 0]} />
+  } catch (error) {
+    console.error('Model loading error:', error)
+    onError && onError(error)
+    return null
+  }
 }
 
 // 로딩 컴포넌트
@@ -18,18 +24,61 @@ function Loading() {
   )
 }
 
+// 에러 컴포넌트
+function ErrorFallback({ error }) {
+  return (
+    <mesh>
+      <boxGeometry args={[2, 2, 2]} />
+      <meshStandardMaterial color="red" />
+    </mesh>
+  )
+}
+
+// 기본 큐브 컴포넌트 (모델 로드 실패시)
+function DefaultCube() {
+  return (
+    <mesh>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color="blue" />
+    </mesh>
+  )
+}
+
 // 메인 3D 뷰어 컴포넌트
 function ModelViewer({ modelPath }) {
+  const [hasError, setHasError] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    console.log('ModelViewer mounted, modelPath:', modelPath)
+  }, [modelPath])
+
+  const handleModelError = (error) => {
+    console.error('Model loading failed:', error)
+    setHasError(true)
+    setIsLoading(false)
+  }
+
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000' }}>
+      <div style={{ position: 'absolute', top: '10px', left: '10px', color: 'white', zIndex: 1000 }}>
+        <p>Model Path: {modelPath}</p>
+        <p>Loading: {isLoading ? 'Yes' : 'No'}</p>
+        <p>Error: {hasError ? 'Yes' : 'No'}</p>
+      </div>
+      
       <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} />
         <pointLight position={[-10, -10, -10]} intensity={0.5} />
         
-        <Suspense fallback={<Loading />}>
-          <Model url={modelPath} />
-        </Suspense>
+        {hasError ? (
+          <DefaultCube />
+        ) : (
+          <Suspense fallback={<Loading />}>
+            <Model url={modelPath} onError={handleModelError} />
+          </Suspense>
+        )}
         
         <OrbitControls 
           enablePan={true}
