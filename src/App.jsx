@@ -5,7 +5,7 @@ import './App.css'
 function App() {
   return (
     <div className="App">
-      <ModelViewer modelPath="/models/s11_collect_0927.gltf" />
+      <ModelViewer modelPath="/models/s11_collect_0927.glb" />
     </div>
   )
 }

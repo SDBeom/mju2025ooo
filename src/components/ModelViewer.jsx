@@ -5,10 +5,10 @@ import { OrbitControls, Environment, useGLTF } from '@react-three/drei'
 // GLTF 모델 로더 컴포넌트
 function Model({ url, onError, onLoad }) {
   try {
-    const { scene } = useGLTF(url, true) // useDraco: true로 압축 해제
+    const { scene } = useGLTF(url)
     console.log('Model loaded successfully:', scene)
     onLoad && onLoad()
-    return <primitive object={scene} scale={0.1} position={[0, 0, 0]} />
+    return <primitive object={scene} scale={1} position={[0, 0, 0]} />
   } catch (error) {
     console.error('Model loading error:', error)
     onError && onError(error)
@@ -36,24 +36,9 @@ function ErrorFallback({ error }) {
   )
 }
 
-// 기본 큐브 컴포넌트 (모델 로드 실패시)
-function DefaultCube() {
-  return (
-    <group>
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="blue" />
-      </mesh>
-      <mesh position={[2, 0, 0]}>
-        <sphereGeometry args={[0.5, 32, 32]} />
-        <meshStandardMaterial color="red" />
-      </mesh>
-      <mesh position={[-2, 0, 0]}>
-        <coneGeometry args={[0.5, 1, 8]} />
-        <meshStandardMaterial color="green" />
-      </mesh>
-    </group>
-  )
+// 로딩 실패시 빈 컴포넌트
+function EmptyScene() {
+  return null
 }
 
 // 메인 3D 뷰어 컴포넌트
@@ -65,13 +50,13 @@ function ModelViewer({ modelPath }) {
   useEffect(() => {
     console.log('ModelViewer mounted, modelPath:', modelPath)
     
-    // 30초 타임아웃 설정
+    // 60초 타임아웃 설정 (GLB 파일이 크므로)
     const timeout = setTimeout(() => {
       console.log('Model loading timeout')
       setLoadTimeout(true)
       setHasError(true)
       setIsLoading(false)
-    }, 30000)
+    }, 60000)
 
     return () => clearTimeout(timeout)
   }, [modelPath])
@@ -103,13 +88,9 @@ function ModelViewer({ modelPath }) {
         <directionalLight position={[10, 10, 5]} intensity={1} />
         <pointLight position={[-10, -10, -10]} intensity={0.5} />
         
-        {hasError ? (
-          <DefaultCube />
-        ) : (
-          <Suspense fallback={<Loading />}>
-            <Model url={modelPath} onError={handleModelError} onLoad={handleModelLoad} />
-          </Suspense>
-        )}
+        <Suspense fallback={<Loading />}>
+          <Model url={modelPath} onError={handleModelError} onLoad={handleModelLoad} />
+        </Suspense>
         
         <OrbitControls 
           enablePan={true}
